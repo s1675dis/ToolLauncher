@@ -19,19 +19,10 @@ import ToolLauncher.config as config
 # ------------------------------------------------------------------
 
 def get_maya_scripts_dir():
-    """Maya の userScriptDir を返す。Mayaがなければフォールバック先を返す。"""
-    if config.MAYA_SCRIPTS_DIR:
-        return config.MAYA_SCRIPTS_DIR
-    try:
-        import maya.cmds as cmds
-        path = cmds.internalVar(userScriptDir=True)
-        # 末尾スラッシュを除去して正規化
-        return os.path.normpath(path)
-    except ImportError:
-        # Maya外では ToolLauncher 直下の _scripts フォルダを使う
-        fallback = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_scripts")
-        os.makedirs(fallback, exist_ok=True)
-        return fallback
+    """C:/Users/<username>/Documents/maya/scripts を返す。"""
+    path = os.path.join(os.path.expanduser("~"), "Documents", "maya", "scripts")
+    os.makedirs(path, exist_ok=True)
+    return os.path.normpath(path)
 
 
 def _ensure_dirs():

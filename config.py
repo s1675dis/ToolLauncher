@@ -20,14 +20,6 @@ MANIFEST_CACHE = os.path.join(CACHE_DIR, "manifest.json")
 ICON_CACHE_DIR = os.path.join(CACHE_DIR, "icons")
 
 # ============================================================
-# Maya scripts ディレクトリ
-# None の場合は cmds.internalVar(userScriptDir=True) で自動取得
-# 固定したい場合はフルパスで指定:
-#   MAYA_SCRIPTS_DIR = r"C:/Users/YOUR_USER/Documents/maya/scripts"
-# ============================================================
-MAYA_SCRIPTS_DIR = None
-
-# ============================================================
 # UI 設定
 # ============================================================
 ICON_SIZE        = 64    # ツールアイコンのサイズ (px)
