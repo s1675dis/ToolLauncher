@@ -31,7 +31,6 @@ ToolLauncher.install.run()
 
 実行すると **ToolLauncher シェルフ** が自動作成され、`Launcher` ボタンが追加されます。
 
-> Maya は起動時に `Documents/maya/scripts/` を自動でパスに追加するため、追加設定は不要です。
 
 ---
 
