@@ -130,7 +130,7 @@ class ToolLauncherUI(QtWidgets.QWidget):
         self._manifest    = tool_manager.load_manifest_cache()
         self._scripts_dir = tool_manager.get_maya_scripts_dir()
         self._worker      = None
-        self._tool_buttons: dict[str, ToolIconButton] = {}
+        self._tool_buttons = {}  # type: dict
 
         self._build_ui()
         self._populate_grid()

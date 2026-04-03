@@ -8,6 +8,7 @@ import os
 import sys
 import urllib.request
 import urllib.error
+from typing import Optional, List
 
 from PySide2 import QtCore
 
@@ -77,7 +78,7 @@ def fetch_manifest():
 # スクリプト・アイコンのダウンロード
 # ------------------------------------------------------------------
 
-def download_tool_scripts(tool: dict, scripts_dir: str) -> list[str]:
+def download_tool_scripts(tool: dict, scripts_dir: str) -> List[str]:
     """
     tool の scripts リストを scripts_dir へダウンロードする。
     Returns: ダウンロードしたファイルパスのリスト
@@ -92,7 +93,7 @@ def download_tool_scripts(tool: dict, scripts_dir: str) -> list[str]:
     return downloaded
 
 
-def download_tool_icon(tool: dict) -> str | None:
+def download_tool_icon(tool: dict) -> Optional[str]:
     """
     tool のアイコンをキャッシュフォルダへダウンロードする。
     Returns: ローカルキャッシュパス（失敗時は None）
@@ -110,7 +111,7 @@ def download_tool_icon(tool: dict) -> str | None:
         return None
 
 
-def get_cached_icon_path(tool: dict) -> str | None:
+def get_cached_icon_path(tool: dict) -> Optional[str]:
     """キャッシュ済みアイコンのパスを返す（存在しなければ None）。"""
     for ext in (".png", ".svg", ".jpg"):
         p = os.path.join(config.ICON_CACHE_DIR, f"{tool['id']}{ext}")
