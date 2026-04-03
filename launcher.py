@@ -198,6 +198,18 @@ class ToolLauncherUI(QtWidgets.QWidget):
 
         self._build_ui()
         self._populate_grid()
+        self._restore_geometry()
+
+    def _restore_geometry(self):
+        settings = QtCore.QSettings("ToolLauncher", "ToolLauncher")
+        geometry = settings.value("geometry")
+        if geometry:
+            self.restoreGeometry(geometry)
+
+    def closeEvent(self, event):
+        settings = QtCore.QSettings("ToolLauncher", "ToolLauncher")
+        settings.setValue("geometry", self.saveGeometry())
+        super().closeEvent(event)
 
     def _build_ui(self):
         root = QtWidgets.QVBoxLayout(self)
