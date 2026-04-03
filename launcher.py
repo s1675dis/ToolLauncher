@@ -205,12 +205,6 @@ class ToolLauncherUI(QtWidgets.QWidget):
         root.setContentsMargins(8, 8, 8, 8)
 
         header = QtWidgets.QHBoxLayout()
-        title  = QtWidgets.QLabel("Tool Launcher")
-        f      = title.font()
-        f.setBold(True)
-        f.setPointSize(11)
-        title.setFont(f)
-        header.addWidget(title)
         header.addStretch()
 
         self.btn_update = QtWidgets.QPushButton("Update")
