@@ -9,7 +9,7 @@ import os
 # GitHub の raw URL を指定してください
 # 例: https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/manifest.json
 # ============================================================
-MANIFEST_URL = "https://raw.githubusercontent.com/YOUR_USER/ToolLauncher-manifest/main/manifest.json"
+MANIFEST_URL = "https://raw.githubusercontent.com/moideco/ToolLauncher-manifest/main/manifest.json"
 
 # ============================================================
 # ローカルキャッシュ
