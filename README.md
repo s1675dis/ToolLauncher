@@ -39,6 +39,7 @@ Maya を起動し、**Script Editor（スクリプトエディター）** を開
 
 ```python
 import ToolLauncher.install
+ToolLauncher.install.run()
 ```
 
 実行すると **ToolLauncher シェルフ** が自動作成され、`Launcher` ボタンが追加されます。
