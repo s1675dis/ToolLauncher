@@ -2,35 +2,25 @@
 install.py - ToolLauncher インストーラー
 
 Mayaのスクリプトエディター(Python)から実行することで
-・sys.path への追加
-・シェルフボタンの作成
-を行います。
+シェルフボタンを自動作成します。
 
 【使い方】
 Maya Script Editor (Python) で以下を実行：
 
     import runpy
-    runpy.run_path(r"D:/Dropbox/scripts/ToolLauncher/install.py")
+    runpy.run_path(r"C:/Users/ユーザー名/Documents/maya/scripts/ToolLauncher/install.py")
 """
 import os
 import sys
 
-# ToolLauncher の親ディレクトリ（scripts フォルダ）を sys.path に追加
-_THIS_DIR  = os.path.dirname(os.path.abspath(__file__))
-_PARENT_DIR = os.path.dirname(_THIS_DIR)
+# 配置パスは固定
+_SCRIPTS_DIR = os.path.join(os.path.expanduser("~"), "Documents", "maya", "scripts")
+_THIS_DIR    = os.path.join(_SCRIPTS_DIR, "ToolLauncher")
 
-if _PARENT_DIR not in sys.path:
-    sys.path.insert(0, _PARENT_DIR)
-    print(f"[ToolLauncher] sys.path に追加: {_PARENT_DIR}")
-else:
-    print(f"[ToolLauncher] 既に sys.path に存在: {_PARENT_DIR}")
+# Maya は起動時に ~/Documents/maya/scripts を自動で sys.path に追加するため
+# userSetup.py への追記は不要です
 
-# シェルフボタン起動コマンド（パスをハードコード）
-_SHELF_CMD = f"""\
-import sys
-_p = r"{_PARENT_DIR}"
-if _p not in sys.path:
-    sys.path.insert(0, _p)
+_SHELF_CMD = """\
 import importlib
 import ToolLauncher.launcher as _tl
 importlib.reload(_tl)
@@ -44,15 +34,13 @@ try:
     import maya.cmds as cmds
     import maya.mel  as mel
 
-    SHELF_NAME  = "ToolLauncher"
+    SHELF_NAME   = "ToolLauncher"
     BUTTON_LABEL = "Launcher"
 
-    # シェルフがなければ作成
     if not cmds.shelfLayout(SHELF_NAME, exists=True):
         mel.eval(f'addNewShelfTab "{SHELF_NAME}"')
         print(f"[ToolLauncher] シェルフを作成: {SHELF_NAME}")
 
-    # 重複チェック
     existing = cmds.shelfLayout(SHELF_NAME, query=True, childArray=True) or []
     already  = any(
         cmds.shelfButton(b, query=True, label=True) == BUTTON_LABEL
@@ -76,20 +64,4 @@ try:
     print("[ToolLauncher] インストール完了!")
 
 except ImportError:
-    print("[ToolLauncher] Maya が見つかりません。シェルフ設定をスキップします。")
-
-# ------------------------------------------------------------------
-# userSetup.py 追記用スニペットを表示
-# ------------------------------------------------------------------
-snippet = f"""\
-# ---- ToolLauncher: パス設定 ----
-import sys
-_tl = r"{_PARENT_DIR}"
-if _tl not in sys.path:
-    sys.path.insert(0, _tl)
-# --------------------------------"""
-
-print("\n" + "=" * 60)
-print("Maya 起動時に自動読み込みするには userSetup.py に追記してください:")
-print("=" * 60)
-print(snippet)
+    print("[ToolLauncher] Maya が見つかりません。Mayaのスクリプトエディターから実行してください。")
