@@ -30,7 +30,6 @@ def get_maya_scripts_dir():
 
 def _ensure_dirs():
     os.makedirs(config.CACHE_DIR, exist_ok=True)
-    os.makedirs(config.ICON_CACHE_DIR, exist_ok=True)
 
 
 def _is_remote_url(source):
@@ -197,32 +196,6 @@ def download_tool_scripts(tool: dict, scripts_dir: str) -> List[str]:
     return downloaded
 
 
-def download_tool_icon(tool: dict) -> Optional[str]:
-    """
-    tool のアイコンをキャッシュフォルダへダウンロードする。
-    Returns: ローカルキャッシュパス（失敗時は None）
-    """
-    icon_url = tool.get("icon_url", "")
-    if not icon_url:
-        return None
-    _ensure_dirs()
-    ext       = os.path.splitext(icon_url)[-1] or ".png"
-    dest      = os.path.join(config.ICON_CACHE_DIR, f"{tool['id']}{ext}")
-    try:
-        _download(icon_url, dest)
-        return dest
-    except Exception:
-        return None
-
-
-def get_cached_icon_path(tool: dict) -> Optional[str]:
-    """キャッシュ済みアイコンのパスを返す（存在しなければ None）。"""
-    for ext in (".png", ".svg", ".jpg"):
-        p = os.path.join(config.ICON_CACHE_DIR, f"{tool['id']}{ext}")
-        if os.path.exists(p):
-            return p
-    return None
-
 
 def is_tool_installed(tool: dict, scripts_dir: str) -> bool:
     """ツールのスクリプトが scripts_dir に存在するか確認する。"""
@@ -359,7 +332,6 @@ class UpdateWorker(QtCore.QThread):
                 name = tool.get("name", tool.get("id", "unknown"))
                 self.progress.emit(f"[{i + 1}/{len(tools)}] {name}...")
                 download_tool_scripts(tool, scripts_dir)
-                download_tool_icon(tool)
                 self.tool_done.emit(tool["id"])
 
             self.finished.emit(manifest)

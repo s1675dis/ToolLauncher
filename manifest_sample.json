@@ -3,57 +3,35 @@
   "updated": "2026-04-03",
   "tools": [
     {
-      "id": "rename_tool",
-      "name": "Rename Tool",
-      "description": "選択オブジェクトの一括リネーム（連番・文字列置換対応）",
+      "id": "your_tool_id",
+      "name": "Your Tool Name",
+      "description": "ツールの説明",
       "version": "1.0.0",
-      "author": "YOUR_USER",
+      "author": "author_name",
       "enabled": true,
-      "icon_url": "https://raw.githubusercontent.com/YOUR_USER/rename_tool/main/icon.png",
-      "maya_icon": "rename.png",
       "scripts": [
         {
-          "url": "https://raw.githubusercontent.com/YOUR_USER/rename_tool/main/rename_tool.py",
-          "filename": "rename_tool.py"
+          "url": "https://raw.githubusercontent.com/author/repo/main/your_tool.py",
+          "filename": "your_tool.py"
         }
       ],
-      "entry_module": "rename_tool",
+      "entry_module": "your_tool",
       "entry_function": "show"
     },
     {
-      "id": "outliner_helper",
-      "name": "Outliner Helper",
-      "description": "タイプ別選択・空グループ削除・フリーズ・ピボット操作",
+      "id": "lan_tool_example",
+      "name": "LAN Tool Example",
+      "description": "LANサーバー上のスクリプトを使う例",
       "version": "1.0.0",
-      "author": "YOUR_USER",
+      "author": "author_name",
       "enabled": true,
-      "icon_url": "https://raw.githubusercontent.com/YOUR_USER/outliner_helper/main/icon.png",
-      "maya_icon": "outlineEditor.png",
       "scripts": [
         {
-          "url": "https://raw.githubusercontent.com/YOUR_USER/outliner_helper/main/outliner_tool.py",
-          "filename": "outliner_tool.py"
+          "url": "\\\\192.168.255.101\\_Book\\tools\\lan_tool.py",
+          "filename": "lan_tool.py"
         }
       ],
-      "entry_module": "outliner_tool",
-      "entry_function": "show"
-    },
-    {
-      "id": "model_check_tool",
-      "name": "Model Check Tool",
-      "description": "LAN server example: script sourced from a shared network drive",
-      "version": "1.0.0",
-      "author": "YOUR_USER",
-      "enabled": true,
-      "icon_url": "",
-      "maya_icon": "menuIconConstraints.png",
-      "scripts": [
-        {
-          "url": "\\\\192.168.255.101\\_Book\\tools\\model_check_tool.py",
-          "filename": "model_check_tool.py"
-        }
-      ],
-      "entry_module": "model_check_tool",
+      "entry_module": "lan_tool",
       "entry_function": "show"
     }
   ]

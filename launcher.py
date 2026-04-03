@@ -17,7 +17,7 @@ except ImportError:
     MAYA_AVAILABLE = False
 
 
-class ToolIconButton(QtWidgets.QToolButton):
+class ToolButton(QtWidgets.QToolButton):
 
     STYLE = """
         QToolButton {
@@ -280,7 +280,7 @@ class ToolLauncherUI(QtWidgets.QWidget):
                 continue
             row = idx // columns
             col = idx % columns
-            btn = ToolIconButton(tool, self._scripts_dir)
+            btn = ToolButton(tool, self._scripts_dir)
             self.grid_layout.addWidget(btn, row, col)
             self._tool_buttons[tool["id"]] = btn
 

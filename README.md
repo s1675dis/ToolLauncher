@@ -99,8 +99,6 @@ User Manifest はローカルに保存された JSON ファイルで、リポジ
       "version": "1.0.0",
       "author": "author_name",
       "enabled": true,
-      "icon_url": "",
-      "maya_icon": "menuIconConstraints.png",
       "scripts": [
         {
           "url": "\\\\192.168.255.101\\_Book\\tools\\model_check_tool.py",
@@ -128,8 +126,6 @@ User Manifest はローカルに保存された JSON ファイルで、リポジ
       "version": "1.0.0",
       "author": "author_name",
       "enabled": true,
-      "icon_url": "",
-      "maya_icon": "commandButton.png",
       "scripts": [
         {
           "url": "https://raw.githubusercontent.com/author/repo/main/my_tool.py",
@@ -151,7 +147,7 @@ User Manifest はローカルに保存された JSON ファイルで、リポジ
 | `name` | ✓ | ランチャーに表示されるボタン名 |
 | `description` | | ツールチップに表示される説明 |
 | `enabled` | | `false` にするとランチャーに表示されない |
-| `scripts[].url` | ✓ | スクリプトの取得元（URL または UNC パス） |
+| `scripts[].url` | ✓ | スクリプトの取得元（HTTPS URL または UNC パス） |
 | `scripts[].filename` | ✓ | Maya scripts フォルダに保存されるファイル名 |
 | `entry_module` | ✓ | 起動時に import するモジュール名（`.py` 不要） |
 | `entry_function` | ✓ | 起動時に呼び出す関数名 |
