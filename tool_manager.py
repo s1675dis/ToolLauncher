@@ -6,6 +6,7 @@ Maya の scripts フォルダへダウンロード・管理するモジュール
 import base64
 import json
 import os
+import shutil
 import sys
 import urllib.request
 import urllib.error
@@ -32,12 +33,24 @@ def _ensure_dirs():
     os.makedirs(config.ICON_CACHE_DIR, exist_ok=True)
 
 
-def _download(url, dest_path):
-    """URL からファイルをダウンロードして dest_path に保存する。"""
-    data = _fetch_remote(url)
+def _is_remote_url(source):
+    """Return True if source is an HTTP/HTTPS/FTP URL."""
+    return source.startswith(("http://", "https://", "ftp://"))
+
+
+def _download(source, dest_path):
+    """
+    Copy source to dest_path.
+    - HTTP/HTTPS/FTP : fetched via urllib
+    - UNC path (\\server\share\...) or local path : copied via shutil
+    """
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-    with open(dest_path, "wb") as f:
-        f.write(data)
+    if _is_remote_url(source):
+        data = _fetch_remote(source)
+        with open(dest_path, "wb") as f:
+            f.write(data)
+    else:
+        shutil.copy2(source, dest_path)
     return dest_path
 
 
