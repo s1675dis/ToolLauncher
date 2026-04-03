@@ -226,25 +226,25 @@ class UpdateWorker(QtCore.QThread):
 
     def run(self):
         try:
-            # ---- Stage 1: ランチャー自己更新 ----
-            self.stage.emit(1, "ランチャーのアップデート")
-            self.progress.emit("ランチャーのファイルを確認中...")
+            # ---- Stage 1: Launcher self-update ----
+            self.stage.emit(1, "Launcher Update")
+            self.progress.emit("Checking launcher files...")
             count = update_launcher_files()
             if count > 0:
-                self.progress.emit(f"ランチャーを更新しました ({count} ファイル)")
+                self.progress.emit(f"Launcher updated ({count} file(s))")
                 self.launcher_updated.emit()
             else:
-                self.progress.emit("ランチャーは最新です")
+                self.progress.emit("Launcher is up to date")
 
-            # ---- Stage 2: Manifest 確認 ----
-            self.stage.emit(2, "Manifest の確認")
-            self.progress.emit("Manifest を取得中...")
+            # ---- Stage 2: Manifest ----
+            self.stage.emit(2, "Manifest Check")
+            self.progress.emit("Fetching manifest...")
             manifest = fetch_manifest()
             tools = [t for t in manifest.get("tools", []) if t.get("enabled", True)]
-            self.progress.emit(f"Manifest を確認しました ({len(tools)} ツール登録)")
+            self.progress.emit(f"Manifest fetched ({len(tools)} tool(s) registered)")
 
-            # ---- Stage 3: 各ツールの取得 ----
-            self.stage.emit(3, "ツールの取得・アップデート")
+            # ---- Stage 3: Tools ----
+            self.stage.emit(3, "Tool Update")
             scripts_dir = get_maya_scripts_dir()
             for i, tool in enumerate(tools):
                 name = tool.get("name", tool.get("id", "unknown"))
@@ -256,6 +256,6 @@ class UpdateWorker(QtCore.QThread):
             self.finished.emit(manifest)
 
         except urllib.error.URLError as e:
-            self.error.emit(f"ネットワークエラー: {e.reason}")
+            self.error.emit(f"Network error: {e.reason}")
         except Exception as e:
             self.error.emit(str(e))

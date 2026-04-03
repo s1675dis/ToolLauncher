@@ -1,8 +1,5 @@
 """
-ToolLauncher - メインランチャーUI
-・アイコングリッドで登録ツールを一覧表示
-・アイコンクリックでツールを起動
-・アップデートボタンでGitHubから最新スクリプト・マニフェストを取得
+ToolLauncher - Main Launcher UI
 """
 import os
 import sys
@@ -20,12 +17,7 @@ except ImportError:
     MAYA_AVAILABLE = False
 
 
-# ------------------------------------------------------------------
-# ツールアイコンボタン
-# ------------------------------------------------------------------
-
 class ToolIconButton(QtWidgets.QToolButton):
-    """アイコン + 名前ラベルを持つツールボタン。"""
 
     ICON_SIZE = config.ICON_SIZE
 
@@ -67,7 +59,6 @@ class ToolIconButton(QtWidgets.QToolButton):
         self._refresh()
         self.clicked.connect(self._launch)
 
-    # ---- 表示更新 ----
     def _refresh(self):
         name      = self.tool.get("name", self.tool.get("id", "Tool"))
         installed = tool_manager.is_tool_installed(self.tool, self.scripts_dir)
@@ -82,7 +73,6 @@ class ToolIconButton(QtWidgets.QToolButton):
             self._set_fallback_icon()
 
     def _set_fallback_icon(self):
-        """Mayaアイコンまたはデフォルトアイコンを使う。"""
         if MAYA_AVAILABLE:
             maya_icon = self.tool.get("maya_icon", "commandButton.png")
             self.setIcon(QtGui.QIcon(f":{maya_icon}"))
@@ -90,18 +80,16 @@ class ToolIconButton(QtWidgets.QToolButton):
             self.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_FileIcon))
 
     def mark_updated(self):
-        """アップデート完了後に呼び出して表示を更新する。"""
         self._refresh()
 
-    # ---- ツール起動 ----
     def _launch(self):
         entry_module = self.tool.get("entry_module")
         entry_func   = self.tool.get("entry_function", "show")
 
         if not entry_module:
             QtWidgets.QMessageBox.warning(
-                self, "設定エラー",
-                f"'{self.tool.get('name')}' に entry_module が設定されていません。"
+                self, "Config Error",
+                f"'entry_module' is not set for '{self.tool.get('name')}'."
             )
             return
 
@@ -109,7 +97,6 @@ class ToolIconButton(QtWidgets.QToolButton):
             sys.path.insert(0, self.scripts_dir)
 
         try:
-            # 破損キャッシュを避けるため一旦削除して再インポート
             if entry_module in sys.modules:
                 del sys.modules[entry_module]
             __import__(entry_module)
@@ -117,20 +104,16 @@ class ToolIconButton(QtWidgets.QToolButton):
             func = getattr(mod, entry_func, None)
             if func is None:
                 raise AttributeError(
-                    f"'{entry_module}' に {entry_func}() が見つかりません。\n"
-                    f"利用可能な関数: {[x for x in dir(mod) if not x.startswith('_')]}"
+                    f"'{entry_module}' has no function '{entry_func}'.\n"
+                    f"Available: {[x for x in dir(mod) if not x.startswith('_')]}"
                 )
             func()
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "起動エラー",
-                f"ツールの起動に失敗しました:\n\n{e}"
+                self, "Launch Error",
+                f"Failed to launch tool:\n\n{e}"
             )
 
-
-# ------------------------------------------------------------------
-# メインランチャーウィンドウ
-# ------------------------------------------------------------------
 
 class ToolLauncherUI(QtWidgets.QWidget):
     WINDOW_TITLE = "Tool Launcher"
@@ -148,16 +131,11 @@ class ToolLauncherUI(QtWidgets.QWidget):
         self._build_ui()
         self._populate_grid()
 
-    # ----------------------------------------------------------------
-    # UI 構築
-    # ----------------------------------------------------------------
-
     def _build_ui(self):
         root = QtWidgets.QVBoxLayout(self)
         root.setSpacing(4)
         root.setContentsMargins(8, 8, 8, 8)
 
-        # ---- ヘッダー ----
         header = QtWidgets.QHBoxLayout()
         title  = QtWidgets.QLabel("Tool Launcher")
         f      = title.font()
@@ -167,9 +145,9 @@ class ToolLauncherUI(QtWidgets.QWidget):
         header.addWidget(title)
         header.addStretch()
 
-        self.btn_update = QtWidgets.QPushButton("アップデート")
-        self.btn_update.setFixedWidth(110)
-        self.btn_update.setToolTip("GitHubから最新のツール情報とスクリプトを取得します")
+        self.btn_update = QtWidgets.QPushButton("Update")
+        self.btn_update.setFixedWidth(80)
+        self.btn_update.setToolTip("Fetch the latest tools and launcher files from GitHub")
         self.btn_update.clicked.connect(self._on_update)
         header.addWidget(self.btn_update)
         root.addLayout(header)
@@ -179,8 +157,7 @@ class ToolLauncherUI(QtWidgets.QWidget):
         sep.setFrameShadow(QtWidgets.QFrame.Sunken)
         root.addWidget(sep)
 
-        # ---- ツールグリッド（スクロール対応） ----
-        self.scroll_area   = QtWidgets.QScrollArea()
+        self.scroll_area    = QtWidgets.QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.grid_container = QtWidgets.QWidget()
@@ -190,32 +167,24 @@ class ToolLauncherUI(QtWidgets.QWidget):
         self.scroll_area.setWidget(self.grid_container)
         root.addWidget(self.scroll_area)
 
-        # ---- ステージ表示 ----
         self.stage_label = QtWidgets.QLabel("")
         self.stage_label.setStyleSheet("font-weight: bold; font-size: 10px;")
         self.stage_label.hide()
         root.addWidget(self.stage_label)
 
-        # ---- ステータスバー ----
         self.status_label = QtWidgets.QLabel("")
         self.status_label.setStyleSheet("color: gray; font-size: 9px;")
         self.status_label.setWordWrap(True)
         root.addWidget(self.status_label)
 
-        # ---- プログレスバー ----
         self.progress_bar = QtWidgets.QProgressBar()
         self.progress_bar.setTextVisible(False)
         self.progress_bar.setFixedHeight(4)
-        self.progress_bar.setRange(0, 0)   # indeterminate
+        self.progress_bar.setRange(0, 0)
         self.progress_bar.hide()
         root.addWidget(self.progress_bar)
 
-    # ----------------------------------------------------------------
-    # グリッド生成
-    # ----------------------------------------------------------------
-
     def _populate_grid(self):
-        # グリッドをクリア
         while self.grid_layout.count():
             item = self.grid_layout.takeAt(0)
             if item.widget():
@@ -226,7 +195,7 @@ class ToolLauncherUI(QtWidgets.QWidget):
         columns = config.GRID_COLUMNS
 
         if not tools:
-            empty = QtWidgets.QLabel("ツールが登録されていません。\n「アップデート」ボタンを押してください。")
+            empty = QtWidgets.QLabel("No tools registered.\nPress \"Update\" to fetch the tool list.")
             empty.setAlignment(QtCore.Qt.AlignCenter)
             empty.setStyleSheet("color: gray;")
             self.grid_layout.addWidget(empty, 0, 0, 1, columns)
@@ -241,17 +210,13 @@ class ToolLauncherUI(QtWidgets.QWidget):
             self.grid_layout.addWidget(btn, row, col)
             self._tool_buttons[tool["id"]] = btn
 
-    # ----------------------------------------------------------------
-    # アップデート処理
-    # ----------------------------------------------------------------
-
     def _on_update(self):
         if self._worker and self._worker.isRunning():
             return
 
         self.btn_update.setEnabled(False)
         self.progress_bar.show()
-        self._set_status("アップデートを開始します...")
+        self._set_status("Starting update...")
 
         self._worker = tool_manager.UpdateWorker(self)
         self._worker.stage.connect(self._on_stage)
@@ -270,25 +235,24 @@ class ToolLauncherUI(QtWidgets.QWidget):
         self._launcher_was_updated = True
 
     def _on_tool_done(self, tool_id: str):
-        """1件のツールが更新されたらボタンを即時更新する。"""
         if tool_id in self._tool_buttons:
             self._tool_buttons[tool_id].mark_updated()
 
     def _on_update_finished(self, manifest: dict):
         self._manifest = manifest
         self._populate_grid()
-        self._set_status(f"アップデート完了 ({len(manifest.get('tools', []))} ツール)")
+        self._set_status(f"Update complete ({len(manifest.get('tools', []))} tools)")
         self._finalize_update()
         if getattr(self, "_launcher_was_updated", False):
             QtWidgets.QMessageBox.information(
-                self, "ランチャーを更新しました",
-                "ランチャー本体を更新しました。\nシェルフボタンを再クリックして最新版を読み込んでください。"
+                self, "Launcher Updated",
+                "The launcher has been updated.\nPlease click the shelf button again to reload."
             )
             self.close()
 
     def _on_update_error(self, message: str):
-        self._set_status(f"エラー: {message}")
-        QtWidgets.QMessageBox.warning(self, "アップデートエラー", message)
+        self._set_status(f"Error: {message}")
+        QtWidgets.QMessageBox.warning(self, "Update Error", message)
         self._finalize_update()
 
     def _finalize_update(self):
@@ -300,13 +264,7 @@ class ToolLauncherUI(QtWidgets.QWidget):
         self.status_label.setText(msg)
 
 
-# ------------------------------------------------------------------
-# 表示エントリポイント
-# ------------------------------------------------------------------
-
 def show():
-    """ランチャーウィンドウを表示する（シェルフボタンから呼び出す）。"""
-    # 既存ウィンドウがあれば前面に出すだけ
     for widget in QtWidgets.QApplication.topLevelWidgets():
         if isinstance(widget, ToolLauncherUI):
             widget.raise_()
@@ -329,7 +287,6 @@ def show():
 
 
 if __name__ == "__main__":
-    # Maya外でのデバッグ用
     import sys as _sys
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(_sys.argv)
     w = show()
