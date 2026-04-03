@@ -116,12 +116,12 @@ class ToolIconButton(QtWidgets.QToolButton):
 
 
 class UserManifestDialog(QtWidgets.QDialog):
-    """Dialog to manage user-added manifest URLs."""
+    """Dialog to manage local user manifest files."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Manage User Manifests")
-        self.setMinimumWidth(480)
+        self.setWindowTitle("User Manifests")
+        self.setMinimumWidth(520)
         self._build_ui()
         self._load()
 
@@ -129,8 +129,8 @@ class UserManifestDialog(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout(self)
 
         desc = QtWidgets.QLabel(
-            "Add manifest URLs for project-specific tools.\n"
-            "These are stored locally and never synced to the main repository."
+            "Register local manifest JSON files for project-specific tools.\n"
+            "Any JSON filename is accepted — the file will be validated on load."
         )
         desc.setStyleSheet("color: gray; font-size: 9px;")
         desc.setWordWrap(True)
@@ -140,20 +140,20 @@ class UserManifestDialog(QtWidgets.QDialog):
         self.list_widget.setAlternatingRowColors(True)
         layout.addWidget(self.list_widget)
 
-        row = QtWidgets.QHBoxLayout()
-        self.le_url = QtWidgets.QLineEdit()
-        self.le_url.setPlaceholderText("https://raw.githubusercontent.com/owner/repo/main/manifest.json")
-        self.le_url.returnPressed.connect(self._add)
-        row.addWidget(self.le_url)
-        btn_add = QtWidgets.QPushButton("Add")
-        btn_add.setFixedWidth(60)
-        btn_add.clicked.connect(self._add)
-        row.addWidget(btn_add)
-        layout.addLayout(row)
+        btn_row = QtWidgets.QHBoxLayout()
+        btn_add = QtWidgets.QPushButton("Add File...")
+        btn_add.clicked.connect(self._browse_and_add)
+        btn_row.addWidget(btn_add)
 
         btn_remove = QtWidgets.QPushButton("Remove Selected")
         btn_remove.clicked.connect(self._remove)
-        layout.addWidget(btn_remove)
+        btn_row.addWidget(btn_remove)
+        layout.addLayout(btn_row)
+
+        self.status_label = QtWidgets.QLabel("")
+        self.status_label.setStyleSheet("font-size: 9px;")
+        self.status_label.setWordWrap(True)
+        layout.addWidget(self.status_label)
 
         btns = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
         btns.accepted.connect(self._save_and_close)
@@ -161,25 +161,43 @@ class UserManifestDialog(QtWidgets.QDialog):
 
     def _load(self):
         self.list_widget.clear()
-        for url in tool_manager.load_user_manifest_urls():
-            self.list_widget.addItem(url)
+        for path in tool_manager.load_user_manifest_paths():
+            self.list_widget.addItem(path)
 
-    def _add(self):
-        url = self.le_url.text().strip()
-        if not url:
+    def _browse_and_add(self):
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Select Manifest File", "", "JSON Files (*.json);;All Files (*)"
+        )
+        if not path:
             return
+
+        # Validate before adding
+        try:
+            tool_manager.load_manifest_from_file(path)
+        except ValueError as e:
+            self.status_label.setStyleSheet("color: #ff6b6b; font-size: 9px;")
+            self.status_label.setText(f"Error: {e}")
+            return
+
         existing = [self.list_widget.item(i).text() for i in range(self.list_widget.count())]
-        if url not in existing:
-            self.list_widget.addItem(url)
-        self.le_url.clear()
+        if path not in existing:
+            self.list_widget.addItem(path)
+            data = tool_manager.load_manifest_from_file(path)
+            count = len(data.get("tools", []))
+            self.status_label.setStyleSheet("color: #6bff6b; font-size: 9px;")
+            self.status_label.setText(f"Added: {os.path.basename(path)}  ({count} tool(s))")
+        else:
+            self.status_label.setStyleSheet("color: gray; font-size: 9px;")
+            self.status_label.setText("Already registered.")
 
     def _remove(self):
         for item in self.list_widget.selectedItems():
             self.list_widget.takeItem(self.list_widget.row(item))
+        self.status_label.setText("")
 
     def _save_and_close(self):
-        urls = [self.list_widget.item(i).text() for i in range(self.list_widget.count())]
-        tool_manager.save_user_manifest_urls(urls)
+        paths = [self.list_widget.item(i).text() for i in range(self.list_widget.count())]
+        tool_manager.save_user_manifest_paths(paths)
         self.accept()
 
 

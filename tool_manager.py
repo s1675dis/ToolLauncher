@@ -78,11 +78,11 @@ def fetch_manifest():
         for tool in _fetch_manifest_from_url(config.MANIFEST_URL).get("tools", [])
     }
 
-    # 2. User manifests (additive only)
+    # 2. User manifests (additive only - read from local files)
     user_tools = {}
-    for url in load_user_manifest_urls():
+    for path in load_user_manifest_paths():
         try:
-            for tool in _fetch_manifest_from_url(url).get("tools", []):
+            for tool in load_manifest_from_file(path).get("tools", []):
                 if tool["id"] not in main_tools:  # never override main manifest
                     user_tools[tool["id"]] = tool
         except Exception:
@@ -105,8 +105,49 @@ def _user_manifests_file():
                    os.path.join(config.CACHE_DIR, "user_manifests.json"))
 
 
-def load_user_manifest_urls():
-    """Load the list of user-added manifest URLs. Returns [] if not configured."""
+# ------------------------------------------------------------------
+# Manifest validation
+# ------------------------------------------------------------------
+
+def validate_manifest(data):
+    """
+    Validate that a parsed JSON object is a valid manifest.
+    Raises ValueError with a descriptive message if invalid.
+    """
+    if not isinstance(data, dict):
+        raise ValueError("Root element must be a JSON object.")
+    if "tools" not in data:
+        raise ValueError("Missing required key: 'tools'.")
+    if not isinstance(data["tools"], list):
+        raise ValueError("'tools' must be an array.")
+    for i, tool in enumerate(data["tools"]):
+        for key in ("id", "name"):
+            if key not in tool:
+                raise ValueError(f"Tool at index {i} is missing required key: '{key}'.")
+    return True
+
+
+def load_manifest_from_file(path):
+    """
+    Load and validate a manifest JSON from a local file path.
+    Raises ValueError on JSON parse error or invalid structure.
+    Returns the manifest dict on success.
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"JSON parse error: {e}")
+    validate_manifest(data)
+    return data
+
+
+# ------------------------------------------------------------------
+# User manifest file path management
+# ------------------------------------------------------------------
+
+def load_user_manifest_paths():
+    """Load the list of registered local manifest file paths."""
     path = _user_manifests_file()
     if os.path.exists(path):
         try:
@@ -117,11 +158,11 @@ def load_user_manifest_urls():
     return []
 
 
-def save_user_manifest_urls(urls):
-    """Save the list of user-added manifest URLs to local storage."""
+def save_user_manifest_paths(paths):
+    """Save the list of registered local manifest file paths."""
     _ensure_dirs()
     with open(_user_manifests_file(), "w", encoding="utf-8") as f:
-        json.dump(urls, f, ensure_ascii=False, indent=2)
+        json.dump(paths, f, ensure_ascii=False, indent=2)
 
 
 # ------------------------------------------------------------------
@@ -289,8 +330,8 @@ class UpdateWorker(QtCore.QThread):
 
             # ---- Stage 2: Manifest ----
             self.stage.emit(2, "Manifest Check")
-            user_urls = load_user_manifest_urls()
-            extra_msg = f" + {len(user_urls)} user manifest(s)" if user_urls else ""
+            user_paths = load_user_manifest_paths()
+            extra_msg = f" + {len(user_paths)} user manifest(s)" if user_paths else ""
             self.progress.emit(f"Fetching main manifest{extra_msg}...")
             manifest = fetch_manifest()
             tools = [t for t in manifest.get("tools", []) if t.get("enabled", True)]
