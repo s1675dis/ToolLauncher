@@ -99,11 +99,18 @@ def fetch_manifest():
 # User manifest URL management
 # ------------------------------------------------------------------
 
+def _user_manifests_file():
+    """Return USER_MANIFESTS_FILE path, falling back if config is outdated."""
+    return getattr(config, "USER_MANIFESTS_FILE",
+                   os.path.join(config.CACHE_DIR, "user_manifests.json"))
+
+
 def load_user_manifest_urls():
-    """Load the list of user-added manifest URLs from local storage."""
-    if os.path.exists(config.USER_MANIFESTS_FILE):
+    """Load the list of user-added manifest URLs. Returns [] if not configured."""
+    path = _user_manifests_file()
+    if os.path.exists(path):
         try:
-            with open(config.USER_MANIFESTS_FILE, "r", encoding="utf-8") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             pass
@@ -113,7 +120,7 @@ def load_user_manifest_urls():
 def save_user_manifest_urls(urls):
     """Save the list of user-added manifest URLs to local storage."""
     _ensure_dirs()
-    with open(config.USER_MANIFESTS_FILE, "w", encoding="utf-8") as f:
+    with open(_user_manifests_file(), "w", encoding="utf-8") as f:
         json.dump(urls, f, ensure_ascii=False, indent=2)
 
 
