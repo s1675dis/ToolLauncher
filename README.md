@@ -82,7 +82,7 @@ User Manifest はローカルに保存された JSON ファイルで、リポジ
 
 ### User Manifest の書き方
 
-ファイル名は任意です（例: `ProjectA.json`、`neon.json` など）。  
+ファイル名は任意です（例: `ProjectA.json`、`testScript.json` など）。  
 以下のフォーマットで記述してください。
 
 #### LAN サーバー上のスクリプトを使う場合
