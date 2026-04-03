@@ -29,6 +29,28 @@ class ToolIconButton(QtWidgets.QToolButton):
 
     ICON_SIZE = config.ICON_SIZE
 
+    STYLE = """
+        QToolButton {
+            background-color: #5d5d5d;
+            border: 1px solid #3a3a3a;
+            border-radius: 4px;
+            padding: 6px 10px;
+            color: #dddddd;
+        }
+        QToolButton:hover {
+            background-color: #6e6e6e;
+            border-color: #999999;
+        }
+        QToolButton:pressed {
+            background-color: #4a4a4a;
+        }
+        QToolButton:disabled {
+            background-color: #3c3c3c;
+            color: #666666;
+            border-color: #2e2e2e;
+        }
+    """
+
     def __init__(self, tool: dict, scripts_dir: str, parent=None):
         super().__init__(parent)
         self.tool        = tool
@@ -36,9 +58,11 @@ class ToolIconButton(QtWidgets.QToolButton):
 
         self.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
         self.setIconSize(QtCore.QSize(self.ICON_SIZE, self.ICON_SIZE))
-        self.setFixedSize(self.ICON_SIZE + 24, self.ICON_SIZE + 36)
+        self.setMinimumHeight(self.ICON_SIZE + 40)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         self.setCursor(QtCore.Qt.PointingHandCursor)
         self.setToolTip(tool.get("description", ""))
+        self.setStyleSheet(self.STYLE)
 
         self._refresh()
         self.clicked.connect(self._launch)
@@ -48,33 +72,22 @@ class ToolIconButton(QtWidgets.QToolButton):
         name      = self.tool.get("name", self.tool.get("id", "Tool"))
         installed = tool_manager.is_tool_installed(self.tool, self.scripts_dir)
 
-        # ラベル（未インストールは薄く表示）
         self.setText(name)
         self.setEnabled(installed)
 
-        # アイコン設定
         icon_path = tool_manager.get_cached_icon_path(self.tool)
         if icon_path and os.path.exists(icon_path):
             self.setIcon(QtGui.QIcon(icon_path))
         else:
-            self._set_fallback_icon(installed)
+            self._set_fallback_icon()
 
-        # スタイル
-        if installed:
-            self.setStyleSheet("")
-        else:
-            self.setStyleSheet("color: gray;")
-
-    def _set_fallback_icon(self, installed: bool):
+    def _set_fallback_icon(self):
         """Mayaアイコンまたはデフォルトアイコンを使う。"""
         if MAYA_AVAILABLE:
             maya_icon = self.tool.get("maya_icon", "commandButton.png")
             self.setIcon(QtGui.QIcon(f":{maya_icon}"))
         else:
-            # Qtの標準アイコンをフォールバックに使う
-            style = self.style()
-            icon  = style.standardIcon(QtWidgets.QStyle.SP_FileIcon)
-            self.setIcon(icon)
+            self.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_FileIcon))
 
     def mark_updated(self):
         """アップデート完了後に呼び出して表示を更新する。"""
