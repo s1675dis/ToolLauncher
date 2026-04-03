@@ -105,16 +105,26 @@ class ToolIconButton(QtWidgets.QToolButton):
             )
             return
 
-        # Maya scripts dir が sys.path に含まれているか確認
         if self.scripts_dir not in sys.path:
             sys.path.insert(0, self.scripts_dir)
 
         try:
-            exec(f"import {entry_module}\n{entry_module}.{entry_func}()")
+            # 破損キャッシュを避けるため一旦削除して再インポート
+            if entry_module in sys.modules:
+                del sys.modules[entry_module]
+            __import__(entry_module)
+            mod  = sys.modules[entry_module]
+            func = getattr(mod, entry_func, None)
+            if func is None:
+                raise AttributeError(
+                    f"'{entry_module}' に {entry_func}() が見つかりません。\n"
+                    f"利用可能な関数: {[x for x in dir(mod) if not x.startswith('_')]}"
+                )
+            func()
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "起動エラー",
-                f"ツールの起動に失敗しました:\n{e}"
+                f"ツールの起動に失敗しました:\n\n{e}"
             )
 
 
