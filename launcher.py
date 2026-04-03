@@ -4,7 +4,6 @@ ToolLauncher - メインランチャーUI
 ・アイコンクリックでツールを起動
 ・アップデートボタンでGitHubから最新スクリプト・マニフェストを取得
 """
-import importlib
 import os
 import sys
 
@@ -98,16 +97,7 @@ class ToolIconButton(QtWidgets.QToolButton):
             sys.path.insert(0, self.scripts_dir)
 
         try:
-            mod = importlib.import_module(entry_module)
-            importlib.reload(mod)
-            func = getattr(mod, entry_func, None)
-            if callable(func):
-                func()
-            else:
-                QtWidgets.QMessageBox.warning(
-                    self, "起動エラー",
-                    f"'{entry_module}' に {entry_func}() 関数が見つかりません。"
-                )
+            exec(f"import {entry_module}\n{entry_module}.{entry_func}()")
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "起動エラー",
