@@ -4,7 +4,7 @@ ToolLauncher - Main Launcher UI
 import os
 import sys
 
-from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2 import QtCore, QtWidgets
 
 import ToolLauncher.config      as config
 import ToolLauncher.tool_manager as tool_manager
@@ -18,8 +18,6 @@ except ImportError:
 
 
 class ToolIconButton(QtWidgets.QToolButton):
-
-    ICON_SIZE = config.ICON_SIZE
 
     STYLE = """
         QToolButton {
@@ -48,9 +46,7 @@ class ToolIconButton(QtWidgets.QToolButton):
         self.tool        = tool
         self.scripts_dir = scripts_dir
 
-        self.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
-        self.setIconSize(QtCore.QSize(self.ICON_SIZE, self.ICON_SIZE))
-        self.setMinimumHeight(self.ICON_SIZE + 40)
+        self.setToolButtonStyle(QtCore.Qt.ToolButtonTextOnly)
         self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         self.setCursor(QtCore.Qt.PointingHandCursor)
         self.setToolTip(tool.get("description", ""))
@@ -62,22 +58,8 @@ class ToolIconButton(QtWidgets.QToolButton):
     def _refresh(self):
         name      = self.tool.get("name", self.tool.get("id", "Tool"))
         installed = tool_manager.is_tool_installed(self.tool, self.scripts_dir)
-
         self.setText(name)
         self.setEnabled(installed)
-
-        icon_path = tool_manager.get_cached_icon_path(self.tool)
-        if icon_path and os.path.exists(icon_path):
-            self.setIcon(QtGui.QIcon(icon_path))
-        else:
-            self._set_fallback_icon()
-
-    def _set_fallback_icon(self):
-        if MAYA_AVAILABLE:
-            maya_icon = self.tool.get("maya_icon", "commandButton.png")
-            self.setIcon(QtGui.QIcon(f":{maya_icon}"))
-        else:
-            self.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_FileIcon))
 
     def mark_updated(self):
         self._refresh()
