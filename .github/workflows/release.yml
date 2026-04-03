@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create ToolLauncher.zip
+        run: |
+          mkdir -p /tmp/ToolLauncher
+          rsync -a --exclude='.git' --exclude='.github' . /tmp/ToolLauncher/
+          cd /tmp
+          zip -r ToolLauncher.zip ToolLauncher/
+          mv ToolLauncher.zip $GITHUB_WORKSPACE/
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest
+          body: main ブランチの最新版
+          files: ToolLauncher.zip
