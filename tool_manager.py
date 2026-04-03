@@ -134,17 +134,30 @@ def is_tool_installed(tool: dict, scripts_dir: str) -> bool:
 
 def update_launcher_files():
     """
-    ランチャー本体のファイルを GitHub から更新する。
-    Returns: 更新したファイル数
+    ランチャー本体のファイルをGitHubと比較し、差分があるファイルのみ更新する。
+    Returns: 実際に更新したファイル数（0なら全て最新）
     """
     launcher_dir = os.path.dirname(os.path.abspath(__file__))
-    count = 0
+    updated = 0
     for filename in config.LAUNCHER_FILES:
         url  = f"{config.LAUNCHER_REPO_RAW}/{filename}"
         dest = os.path.join(launcher_dir, filename)
-        _download(url, dest)
-        count += 1
-    return count
+
+        req = urllib.request.Request(url, headers={"User-Agent": "ToolLauncher/1.0"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            remote_data = resp.read()
+
+        # ローカルと内容が同じならスキップ
+        if os.path.exists(dest):
+            with open(dest, "rb") as f:
+                if f.read() == remote_data:
+                    continue
+
+        with open(dest, "wb") as f:
+            f.write(remote_data)
+        updated += 1
+
+    return updated
 
 
 # ------------------------------------------------------------------
@@ -178,10 +191,13 @@ class UpdateWorker(QtCore.QThread):
         try:
             # ---- Stage 1: ランチャー自己更新 ----
             self.stage.emit(1, "ランチャーのアップデート")
-            self.progress.emit("ランチャーのファイルを取得中...")
+            self.progress.emit("ランチャーのファイルを確認中...")
             count = update_launcher_files()
-            self.progress.emit(f"ランチャーを更新しました ({count} ファイル)")
-            self.launcher_updated.emit()
+            if count > 0:
+                self.progress.emit(f"ランチャーを更新しました ({count} ファイル)")
+                self.launcher_updated.emit()
+            else:
+                self.progress.emit("ランチャーは最新です")
 
             # ---- Stage 2: Manifest 確認 ----
             self.stage.emit(2, "Manifest の確認")
