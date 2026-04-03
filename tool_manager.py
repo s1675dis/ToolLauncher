@@ -3,6 +3,7 @@ tool_manager.py
 GitHub上のマニフェストJSONを取得し、ツールスクリプト・アイコンを
 Maya の scripts フォルダへダウンロード・管理するモジュール。
 """
+import base64
 import json
 import os
 import sys
@@ -151,18 +152,40 @@ def _content_equal(local_path, remote_data):
     return local_data.replace(b"\r\n", b"\n") == remote_data.replace(b"\r\n", b"\n")
 
 
+def _fetch_via_contents_api(filename):
+    """
+    GitHub Contents API でファイル内容を取得する。
+    raw.githubusercontent.com と異なりCDNキャッシュが効かないため
+    常に最新コミットの内容を返す。
+    """
+    # LAUNCHER_REPO_RAW から owner/repo/ref を解析
+    # 例: https://raw.githubusercontent.com/moideco/ToolLauncher/main
+    path  = config.LAUNCHER_REPO_RAW.replace("https://raw.githubusercontent.com/", "")
+    owner, repo, ref = path.split("/", 2)
+
+    api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{filename}?ref={ref}"
+    headers = {
+        "User-Agent": "ToolLauncher/1.0",
+        "Accept":     "application/vnd.github.v3+json",
+    }
+    req = urllib.request.Request(api_url, headers=headers)
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        result = json.loads(resp.read().decode("utf-8"))
+
+    return base64.b64decode(result["content"])
+
+
 def update_launcher_files():
     """
-    ランチャー本体のファイルをGitHubと比較し、差分があるファイルのみ更新する。
+    GitHub Contents API でランチャーファイルを取得し、
+    差分があるファイルのみ上書きする。
     Returns: 実際に更新したファイル数（0なら全て最新）
     """
     launcher_dir = os.path.dirname(os.path.abspath(__file__))
     updated = 0
     for filename in config.LAUNCHER_FILES:
-        url  = f"{config.LAUNCHER_REPO_RAW}/{filename}"
-        dest = os.path.join(launcher_dir, filename)
-
-        remote_data = _fetch_remote(url)
+        dest        = os.path.join(launcher_dir, filename)
+        remote_data = _fetch_via_contents_api(filename)
 
         if _content_equal(dest, remote_data):
             continue
