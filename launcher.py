@@ -47,7 +47,7 @@ class ToolButton(QtWidgets.QToolButton):
         self.scripts_dir = scripts_dir
 
         self.setToolButtonStyle(QtCore.Qt.ToolButtonTextOnly)
-        self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.setCursor(QtCore.Qt.PointingHandCursor)
         self.setToolTip(tool.get("description", ""))
         self.setStyleSheet(self.STYLE)
@@ -189,7 +189,7 @@ class ToolLauncherUI(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.WINDOW_TITLE)
-        self.setMinimumWidth(config.WINDOW_MIN_WIDTH)
+        self.setFixedWidth(config.WINDOW_WIDTH)
 
         self._manifest    = tool_manager.load_manifest_cache()
         self._scripts_dir = tool_manager.get_maya_scripts_dir()

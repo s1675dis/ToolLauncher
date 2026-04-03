@@ -28,5 +28,5 @@ USER_MANIFESTS_FILE = os.path.join(CACHE_DIR, "user_manifests.json")
 # ============================================================
 # UI 設定
 # ============================================================
-GRID_COLUMNS     = 4     # グリッドの列数
-WINDOW_MIN_WIDTH = 340
+GRID_COLUMNS     = 1     # グリッドの列数
+WINDOW_WIDTH     = 220
