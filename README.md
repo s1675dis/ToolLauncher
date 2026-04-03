@@ -40,11 +40,8 @@ Maya を起動し、**Script Editor（スクリプトエディター）** を開
 言語を **Python** に切り替えて、以下を実行してください。
 
 ```python
-import runpy
-runpy.run_path(r"C:/Users/ユーザー名/Documents/maya/scripts/ToolLauncher/install.py")
+import ToolLauncher.install
 ```
-
-> `ユーザー名` の部分はご自身の Windows ユーザー名に合わせてください。
 
 実行すると **ToolLauncher シェルフ** が自動作成され、`Launcher` ボタンが追加されます。
 
