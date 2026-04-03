@@ -46,7 +46,7 @@ def _download(url, dest_path):
 # ------------------------------------------------------------------
 
 def load_manifest_cache():
-    """ローカルキャッシュからマニフェストを読み込む。なければ空を返す。"""
+    """Load merged manifest from local cache. Returns empty manifest if not found."""
     if os.path.exists(config.MANIFEST_CACHE):
         try:
             with open(config.MANIFEST_CACHE, "r", encoding="utf-8") as f:
@@ -56,21 +56,63 @@ def load_manifest_cache():
     return {"tools": []}
 
 
+def _fetch_manifest_from_url(url):
+    """Fetch a single manifest JSON from the given URL."""
+    req = urllib.request.Request(url, headers={"User-Agent": "ToolLauncher/1.0"})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _merge_manifests(manifests):
+    """
+    Merge multiple manifests into one.
+    Tools are merged in order; later entries override earlier ones with the same id.
+    """
+    merged = {}
+    for manifest in manifests:
+        for tool in manifest.get("tools", []):
+            merged[tool["id"]] = tool
+    return {"tools": list(merged.values())}
+
+
 def fetch_manifest():
     """
-    GitHub からマニフェストを取得してキャッシュに保存し、内容を返す。
-    失敗した場合は例外をそのまま raise する。
+    Fetch the main manifest and all user manifests from GitHub,
+    merge them, save to cache, and return the result.
     """
     _ensure_dirs()
-    req = urllib.request.Request(
-        config.MANIFEST_URL,
-        headers={"User-Agent": "ToolLauncher/1.0"},
-    )
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    manifests = [_fetch_manifest_from_url(config.MANIFEST_URL)]
+    for url in load_user_manifest_urls():
+        try:
+            manifests.append(_fetch_manifest_from_url(url))
+        except Exception:
+            pass  # Skip unreachable user manifests silently
+    merged = _merge_manifests(manifests)
     with open(config.MANIFEST_CACHE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    return data
+        json.dump(merged, f, ensure_ascii=False, indent=2)
+    return merged
+
+
+# ------------------------------------------------------------------
+# User manifest URL management
+# ------------------------------------------------------------------
+
+def load_user_manifest_urls():
+    """Load the list of user-added manifest URLs from local storage."""
+    if os.path.exists(config.USER_MANIFESTS_FILE):
+        try:
+            with open(config.USER_MANIFESTS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+
+def save_user_manifest_urls(urls):
+    """Save the list of user-added manifest URLs to local storage."""
+    _ensure_dirs()
+    with open(config.USER_MANIFESTS_FILE, "w", encoding="utf-8") as f:
+        json.dump(urls, f, ensure_ascii=False, indent=2)
 
 
 # ------------------------------------------------------------------
@@ -238,7 +280,9 @@ class UpdateWorker(QtCore.QThread):
 
             # ---- Stage 2: Manifest ----
             self.stage.emit(2, "Manifest Check")
-            self.progress.emit("Fetching manifest...")
+            user_urls = load_user_manifest_urls()
+            extra = f" + {len(user_urls)} user manifest(s)" if user_urls else ""
+            self.progress.emit(f"Fetching manifest{extra}...")
             manifest = fetch_manifest()
             tools = [t for t in manifest.get("tools", []) if t.get("enabled", True)]
             self.progress.emit(f"Manifest fetched ({len(tools)} tool(s) registered)")

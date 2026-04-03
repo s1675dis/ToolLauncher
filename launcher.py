@@ -115,6 +115,74 @@ class ToolIconButton(QtWidgets.QToolButton):
             )
 
 
+class UserManifestDialog(QtWidgets.QDialog):
+    """Dialog to manage user-added manifest URLs."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Manage User Manifests")
+        self.setMinimumWidth(480)
+        self._build_ui()
+        self._load()
+
+    def _build_ui(self):
+        layout = QtWidgets.QVBoxLayout(self)
+
+        desc = QtWidgets.QLabel(
+            "Add manifest URLs for project-specific tools.\n"
+            "These are stored locally and never synced to the main repository."
+        )
+        desc.setStyleSheet("color: gray; font-size: 9px;")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+
+        self.list_widget = QtWidgets.QListWidget()
+        self.list_widget.setAlternatingRowColors(True)
+        layout.addWidget(self.list_widget)
+
+        row = QtWidgets.QHBoxLayout()
+        self.le_url = QtWidgets.QLineEdit()
+        self.le_url.setPlaceholderText("https://raw.githubusercontent.com/owner/repo/main/manifest.json")
+        self.le_url.returnPressed.connect(self._add)
+        row.addWidget(self.le_url)
+        btn_add = QtWidgets.QPushButton("Add")
+        btn_add.setFixedWidth(60)
+        btn_add.clicked.connect(self._add)
+        row.addWidget(btn_add)
+        layout.addLayout(row)
+
+        btn_remove = QtWidgets.QPushButton("Remove Selected")
+        btn_remove.clicked.connect(self._remove)
+        layout.addWidget(btn_remove)
+
+        btns = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
+        btns.accepted.connect(self._save_and_close)
+        layout.addWidget(btns)
+
+    def _load(self):
+        self.list_widget.clear()
+        for url in tool_manager.load_user_manifest_urls():
+            self.list_widget.addItem(url)
+
+    def _add(self):
+        url = self.le_url.text().strip()
+        if not url:
+            return
+        existing = [self.list_widget.item(i).text() for i in range(self.list_widget.count())]
+        if url not in existing:
+            self.list_widget.addItem(url)
+        self.le_url.clear()
+
+    def _remove(self):
+        for item in self.list_widget.selectedItems():
+            self.list_widget.takeItem(self.list_widget.row(item))
+
+    def _save_and_close(self):
+        urls = [self.list_widget.item(i).text() for i in range(self.list_widget.count())]
+        tool_manager.save_user_manifest_urls(urls)
+        self.accept()
+
+
 class ToolLauncherUI(QtWidgets.QWidget):
     WINDOW_TITLE = "Tool Launcher"
 
@@ -150,6 +218,12 @@ class ToolLauncherUI(QtWidgets.QWidget):
         self.btn_update.setToolTip("Fetch the latest tools and launcher files from GitHub")
         self.btn_update.clicked.connect(self._on_update)
         header.addWidget(self.btn_update)
+
+        btn_settings = QtWidgets.QPushButton("⚙")
+        btn_settings.setFixedWidth(28)
+        btn_settings.setToolTip("Manage user manifest URLs")
+        btn_settings.clicked.connect(self._on_settings)
+        header.addWidget(btn_settings)
         root.addLayout(header)
 
         sep = QtWidgets.QFrame()
@@ -209,6 +283,10 @@ class ToolLauncherUI(QtWidgets.QWidget):
             btn = ToolIconButton(tool, self._scripts_dir)
             self.grid_layout.addWidget(btn, row, col)
             self._tool_buttons[tool["id"]] = btn
+
+    def _on_settings(self):
+        dlg = UserManifestDialog(self)
+        dlg.exec_()
 
     def _on_update(self):
         if self._worker and self._worker.isRunning():

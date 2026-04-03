@@ -22,8 +22,9 @@ LAUNCHER_FILES    = ["__init__.py", "config.py", "launcher.py", "tool_manager.py
 # ============================================================
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_DIR      = os.path.join(_THIS_DIR, ".cache")
-MANIFEST_CACHE = os.path.join(CACHE_DIR, "manifest.json")
-ICON_CACHE_DIR = os.path.join(CACHE_DIR, "icons")
+MANIFEST_CACHE      = os.path.join(CACHE_DIR, "manifest.json")
+ICON_CACHE_DIR      = os.path.join(CACHE_DIR, "icons")
+USER_MANIFESTS_FILE = os.path.join(CACHE_DIR, "user_manifests.json")
 
 # ============================================================
 # UI 設定
