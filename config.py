@@ -9,12 +9,12 @@ import os
 # GitHub の raw URL を指定してください
 # 例: https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/manifest.json
 # ============================================================
-MANIFEST_URL = "https://raw.githubusercontent.com/moideco/ToolLauncher/main/manifest.json"
+MANIFEST_URL = "https://raw.githubusercontent.com/s1675dis/ToolLauncher/main/manifest.json"
 
 # ============================================================
 # ランチャー自己更新
 # ============================================================
-LAUNCHER_REPO_RAW = "https://raw.githubusercontent.com/moideco/ToolLauncher/main"
+LAUNCHER_REPO_RAW = "https://raw.githubusercontent.com/s1675dis/ToolLauncher/main"
 LAUNCHER_FILES    = ["__init__.py", "config.py", "launcher.py", "tool_manager.py"]
 
 # ============================================================
