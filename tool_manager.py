@@ -260,11 +260,8 @@ def _content_equal(local_path, remote_data):
 def _fetch_via_contents_api(filename):
     """
     GitHub Contents API でファイル内容を取得する。
-    raw.githubusercontent.com と異なりCDNキャッシュが効かないため
-    常に最新コミットの内容を返す。
+    レート制限(403/429)の場合は raw URL にフォールバックする。
     """
-    # LAUNCHER_REPO_RAW から owner/repo/ref を解析
-    # 例: https://raw.githubusercontent.com/moideco/ToolLauncher/main
     path  = config.LAUNCHER_REPO_RAW.replace("https://raw.githubusercontent.com/", "")
     owner, repo, ref = path.split("/", 2)
 
@@ -273,11 +270,16 @@ def _fetch_via_contents_api(filename):
         "User-Agent": "ToolLauncher/1.0",
         "Accept":     "application/vnd.github.v3+json",
     }
-    req = urllib.request.Request(api_url, headers=headers)
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        result = json.loads(resp.read().decode("utf-8"))
-
-    return base64.b64decode(result["content"])
+    try:
+        req = urllib.request.Request(api_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+        return base64.b64decode(result["content"])
+    except urllib.error.HTTPError as e:
+        if e.code in (403, 429):
+            # Rate limited — fall back to raw URL
+            return _fetch_remote(f"{config.LAUNCHER_REPO_RAW}/{filename}")
+        raise
 
 
 def update_launcher_files():
