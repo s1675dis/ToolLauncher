@@ -63,31 +63,33 @@ def _fetch_manifest_from_url(url):
         return json.loads(resp.read().decode("utf-8"))
 
 
-def _merge_manifests(manifests):
-    """
-    Merge multiple manifests into one.
-    Tools are merged in order; later entries override earlier ones with the same id.
-    """
-    merged = {}
-    for manifest in manifests:
-        for tool in manifest.get("tools", []):
-            merged[tool["id"]] = tool
-    return {"tools": list(merged.values())}
-
-
 def fetch_manifest():
     """
-    Fetch the main manifest and all user manifests from GitHub,
-    merge them, save to cache, and return the result.
+    Fetch the main manifest, then additionally fetch all user manifests.
+    - Main manifest is always the base and takes priority.
+    - User manifest tools are appended; they cannot override main manifest tools.
+    - Unreachable user manifests are silently skipped.
     """
     _ensure_dirs()
-    manifests = [_fetch_manifest_from_url(config.MANIFEST_URL)]
+
+    # 1. Main manifest (always required)
+    main_tools = {
+        tool["id"]: tool
+        for tool in _fetch_manifest_from_url(config.MANIFEST_URL).get("tools", [])
+    }
+
+    # 2. User manifests (additive only)
+    user_tools = {}
     for url in load_user_manifest_urls():
         try:
-            manifests.append(_fetch_manifest_from_url(url))
+            for tool in _fetch_manifest_from_url(url).get("tools", []):
+                if tool["id"] not in main_tools:  # never override main manifest
+                    user_tools[tool["id"]] = tool
         except Exception:
-            pass  # Skip unreachable user manifests silently
-    merged = _merge_manifests(manifests)
+            pass
+
+    merged = {"tools": list(main_tools.values()) + list(user_tools.values())}
+
     with open(config.MANIFEST_CACHE, "w", encoding="utf-8") as f:
         json.dump(merged, f, ensure_ascii=False, indent=2)
     return merged
@@ -281,11 +283,11 @@ class UpdateWorker(QtCore.QThread):
             # ---- Stage 2: Manifest ----
             self.stage.emit(2, "Manifest Check")
             user_urls = load_user_manifest_urls()
-            extra = f" + {len(user_urls)} user manifest(s)" if user_urls else ""
-            self.progress.emit(f"Fetching manifest{extra}...")
+            extra_msg = f" + {len(user_urls)} user manifest(s)" if user_urls else ""
+            self.progress.emit(f"Fetching main manifest{extra_msg}...")
             manifest = fetch_manifest()
             tools = [t for t in manifest.get("tools", []) if t.get("enabled", True)]
-            self.progress.emit(f"Manifest fetched ({len(tools)} tool(s) registered)")
+            self.progress.emit(f"Manifest fetched ({len(tools)} tool(s) total)")
 
             # ---- Stage 3: Tools ----
             self.stage.emit(3, "Tool Update")
