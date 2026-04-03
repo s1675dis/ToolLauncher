@@ -93,19 +93,19 @@ User Manifest はローカルに保存された JSON ファイルで、リポジ
   "updated": "2026-04-03",
   "tools": [
     {
-      "id": "model_check_tool",
-      "name": "Model Check Tool",
+      "id": "任意のID",
+      "name": "任意の名前",
       "description": "ツールの説明",
       "version": "1.0.0",
-      "author": "author_name",
+      "author": "必要場合は制作者名",
       "enabled": true,
       "scripts": [
         {
-          "url": "\\\\192.168.255.101\\_Book\\tools\\model_check_tool.py",
-          "filename": "model_check_tool.py"
+          "url": "\\\\192.168.255.255\\任意のディレクトリ\\任意のスクリプト名.py",
+          "filename": "任意のスクリプト名.py"
         }
       ],
-      "entry_module": "model_check_tool",
+      "entry_module": "任意のスクリプト名",
       "entry_function": "show"
     }
   ]
