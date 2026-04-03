@@ -33,9 +33,7 @@ def _ensure_dirs():
 
 def _download(url, dest_path):
     """URL からファイルをダウンロードして dest_path に保存する。"""
-    req = urllib.request.Request(url, headers={"User-Agent": "ToolLauncher/1.0"})
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        data = resp.read()
+    data = _fetch_remote(url)
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     with open(dest_path, "wb") as f:
         f.write(data)
@@ -132,6 +130,27 @@ def is_tool_installed(tool: dict, scripts_dir: str) -> bool:
 # ランチャー自己更新
 # ------------------------------------------------------------------
 
+def _fetch_remote(url):
+    """キャッシュを無効化したヘッダーでURLの内容を取得する。"""
+    headers = {
+        "User-Agent":     "ToolLauncher/1.0",
+        "Cache-Control":  "no-cache, no-store",
+        "Pragma":         "no-cache",
+    }
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return resp.read()
+
+
+def _content_equal(local_path, remote_data):
+    """ローカルファイルとリモートデータを改行コードを正規化して比較する。"""
+    if not os.path.exists(local_path):
+        return False
+    with open(local_path, "rb") as f:
+        local_data = f.read()
+    return local_data.replace(b"\r\n", b"\n") == remote_data.replace(b"\r\n", b"\n")
+
+
 def update_launcher_files():
     """
     ランチャー本体のファイルをGitHubと比較し、差分があるファイルのみ更新する。
@@ -143,15 +162,10 @@ def update_launcher_files():
         url  = f"{config.LAUNCHER_REPO_RAW}/{filename}"
         dest = os.path.join(launcher_dir, filename)
 
-        req = urllib.request.Request(url, headers={"User-Agent": "ToolLauncher/1.0"})
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            remote_data = resp.read()
+        remote_data = _fetch_remote(url)
 
-        # ローカルと内容が同じならスキップ
-        if os.path.exists(dest):
-            with open(dest, "rb") as f:
-                if f.read() == remote_data:
-                    continue
+        if _content_equal(dest, remote_data):
+            continue
 
         with open(dest, "wb") as f:
             f.write(remote_data)

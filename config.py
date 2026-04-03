@@ -15,7 +15,7 @@ MANIFEST_URL = "https://raw.githubusercontent.com/moideco/ToolLauncher/main/mani
 # ランチャー自己更新
 # ============================================================
 LAUNCHER_REPO_RAW = "https://raw.githubusercontent.com/moideco/ToolLauncher/main"
-LAUNCHER_FILES    = ["__init__.py", "launcher.py", "tool_manager.py"]
+LAUNCHER_FILES    = ["__init__.py", "config.py", "launcher.py", "tool_manager.py"]
 
 # ============================================================
 # ローカルキャッシュ
