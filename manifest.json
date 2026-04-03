@@ -19,7 +19,7 @@
         }
       ],
       "entry_module": "DoraSkinWeightToolsPy",
-      "entry_function": "show"
+      "entry_function": "launch"
     }
   ]
 }
