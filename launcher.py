@@ -167,6 +167,12 @@ class ToolLauncherUI(QtWidgets.QWidget):
         self.scroll_area.setWidget(self.grid_container)
         root.addWidget(self.scroll_area)
 
+        # ---- ステージ表示 ----
+        self.stage_label = QtWidgets.QLabel("")
+        self.stage_label.setStyleSheet("font-weight: bold; font-size: 10px;")
+        self.stage_label.hide()
+        root.addWidget(self.stage_label)
+
         # ---- ステータスバー ----
         self.status_label = QtWidgets.QLabel("")
         self.status_label.setStyleSheet("color: gray; font-size: 9px;")
@@ -225,11 +231,20 @@ class ToolLauncherUI(QtWidgets.QWidget):
         self._set_status("アップデートを開始します...")
 
         self._worker = tool_manager.UpdateWorker(self)
+        self._worker.stage.connect(self._on_stage)
         self._worker.progress.connect(self._set_status)
         self._worker.tool_done.connect(self._on_tool_done)
+        self._worker.launcher_updated.connect(self._on_launcher_updated)
         self._worker.finished.connect(self._on_update_finished)
         self._worker.error.connect(self._on_update_error)
         self._worker.start()
+
+    def _on_stage(self, num, label):
+        self.stage_label.setText(f"[{num}/3] {label}")
+        self.stage_label.show()
+
+    def _on_launcher_updated(self):
+        self._launcher_was_updated = True
 
     def _on_tool_done(self, tool_id: str):
         """1件のツールが更新されたらボタンを即時更新する。"""
@@ -238,9 +253,15 @@ class ToolLauncherUI(QtWidgets.QWidget):
 
     def _on_update_finished(self, manifest: dict):
         self._manifest = manifest
-        self._populate_grid()   # 新ツールが追加されていれば再描画
+        self._populate_grid()
         self._set_status(f"アップデート完了 ({len(manifest.get('tools', []))} ツール)")
         self._finalize_update()
+        if getattr(self, "_launcher_was_updated", False):
+            QtWidgets.QMessageBox.information(
+                self, "ランチャーを更新しました",
+                "ランチャー本体を更新しました。\nシェルフボタンを再クリックして最新版を読み込んでください。"
+            )
+            self.close()
 
     def _on_update_error(self, message: str):
         self._set_status(f"エラー: {message}")
@@ -250,6 +271,7 @@ class ToolLauncherUI(QtWidgets.QWidget):
     def _finalize_update(self):
         self.btn_update.setEnabled(True)
         self.progress_bar.hide()
+        self.stage_label.hide()
 
     def _set_status(self, msg: str):
         self.status_label.setText(msg)

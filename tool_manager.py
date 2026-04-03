@@ -129,45 +129,75 @@ def is_tool_installed(tool: dict, scripts_dir: str) -> bool:
 
 
 # ------------------------------------------------------------------
-# Qt Worker（バックグラウンドアップデート）
+# ランチャー自己更新
+# ------------------------------------------------------------------
+
+def update_launcher_files():
+    """
+    ランチャー本体のファイルを GitHub から更新する。
+    Returns: 更新したファイル数
+    """
+    launcher_dir = os.path.dirname(os.path.abspath(__file__))
+    count = 0
+    for filename in config.LAUNCHER_FILES:
+        url  = f"{config.LAUNCHER_REPO_RAW}/{filename}"
+        dest = os.path.join(launcher_dir, filename)
+        _download(url, dest)
+        count += 1
+    return count
+
+
+# ------------------------------------------------------------------
+# Qt Worker（バックグラウンドアップデート・3段階）
 # ------------------------------------------------------------------
 
 class UpdateWorker(QtCore.QThread):
     """
-    バックグラウンドでマニフェスト取得 + 全ツールのダウンロードを行う。
+    3段階のアップデートをバックグラウンドで実行する。
+
+    Stage 1: ランチャー自己更新
+    Stage 2: Manifest 確認・取得
+    Stage 3: 各ツールのスクリプト・アイコン取得
+
     シグナル:
-        progress(str)    : 進捗メッセージ
-        tool_done(str)   : ツールID（1件完了）
-        finished(dict)   : 完了時のマニフェストデータ
-        error(str)       : エラーメッセージ
+        stage(int, str)         : ステージ番号(1-3)とラベル
+        progress(str)           : 詳細メッセージ
+        tool_done(str)          : ツールID（1件完了）
+        launcher_updated()      : ランチャーファイルを更新した
+        finished(dict)          : 完了時のマニフェストデータ
+        error(str)              : エラーメッセージ
     """
-    progress  = QtCore.Signal(str)
-    tool_done = QtCore.Signal(str)
-    finished  = QtCore.Signal(dict)
-    error     = QtCore.Signal(str)
+    stage           = QtCore.Signal(int, str)
+    progress        = QtCore.Signal(str)
+    tool_done       = QtCore.Signal(str)
+    launcher_updated = QtCore.Signal()
+    finished        = QtCore.Signal(dict)
+    error           = QtCore.Signal(str)
 
     def run(self):
         try:
-            # 1. マニフェストを取得
-            self.progress.emit("マニフェストを取得中...")
+            # ---- Stage 1: ランチャー自己更新 ----
+            self.stage.emit(1, "ランチャーのアップデート")
+            self.progress.emit("ランチャーのファイルを取得中...")
+            count = update_launcher_files()
+            self.progress.emit(f"ランチャーを更新しました ({count} ファイル)")
+            self.launcher_updated.emit()
+
+            # ---- Stage 2: Manifest 確認 ----
+            self.stage.emit(2, "Manifest の確認")
+            self.progress.emit("Manifest を取得中...")
             manifest = fetch_manifest()
+            tools = [t for t in manifest.get("tools", []) if t.get("enabled", True)]
+            self.progress.emit(f"Manifest を確認しました ({len(tools)} ツール登録)")
 
+            # ---- Stage 3: 各ツールの取得 ----
+            self.stage.emit(3, "ツールの取得・アップデート")
             scripts_dir = get_maya_scripts_dir()
-            self.progress.emit(f"ダウンロード先: {scripts_dir}")
-
-            tools = manifest.get("tools", [])
             for i, tool in enumerate(tools):
-                if not tool.get("enabled", True):
-                    continue
                 name = tool.get("name", tool.get("id", "unknown"))
-                self.progress.emit(f"[{i + 1}/{len(tools)}] {name} を更新中...")
-
-                # スクリプトダウンロード
+                self.progress.emit(f"[{i + 1}/{len(tools)}] {name}...")
                 download_tool_scripts(tool, scripts_dir)
-
-                # アイコンダウンロード
                 download_tool_icon(tool)
-
                 self.tool_done.emit(tool["id"])
 
             self.finished.emit(manifest)

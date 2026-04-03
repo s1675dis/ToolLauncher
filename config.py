@@ -12,6 +12,12 @@ import os
 MANIFEST_URL = "https://raw.githubusercontent.com/moideco/ToolLauncher/main/manifest.json"
 
 # ============================================================
+# ランチャー自己更新
+# ============================================================
+LAUNCHER_REPO_RAW = "https://raw.githubusercontent.com/moideco/ToolLauncher/main"
+LAUNCHER_FILES    = ["__init__.py", "launcher.py", "tool_manager.py"]
+
+# ============================================================
 # ローカルキャッシュ
 # ============================================================
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))

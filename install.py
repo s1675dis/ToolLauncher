@@ -21,8 +21,10 @@ _THIS_DIR    = os.path.join(_SCRIPTS_DIR, "ToolLauncher")
 # userSetup.py への追記は不要です
 
 _SHELF_CMD = """\
-import ToolLauncher.launcher
-ToolLauncher.launcher.show()
+import importlib
+import ToolLauncher.launcher as _tl
+importlib.reload(_tl)
+_tl.show()
 """
 
 # ------------------------------------------------------------------
