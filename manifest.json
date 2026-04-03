@@ -1,0 +1,25 @@
+{
+  "version": "1.1.0",
+  "updated": "2026-04-03",
+  "tools": [
+    {
+      "id": "dora_skin_weight_tools",
+      "name": "SkinWeightTools",
+      "description": "スキンウェイトのImport/Export・BodyFit・データ検証・CageWeight生成ツール",
+      "version": "1.0.0",
+      "author": "Kiasejapan",
+      "repository": "https://github.com/Kiasejapan/SkinWeightToolsPy",
+      "enabled": true,
+      "icon_url": "",
+      "maya_icon": "kinSkeleton.png",
+      "scripts": [
+        {
+          "url": "https://raw.githubusercontent.com/Kiasejapan/SkinWeightToolsPy/main/DoraSkinWeightToolsPy.py",
+          "filename": "DoraSkinWeightToolsPy.py"
+        }
+      ],
+      "entry_module": "DoraSkinWeightToolsPy",
+      "entry_function": "show"
+    }
+  ]
+}
