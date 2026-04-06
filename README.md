@@ -105,8 +105,7 @@ User Manifest はローカルに保存された JSON ファイルで、リポジ
           "filename": "任意のスクリプト名.py"
         }
       ],
-      "entry_module": "任意のスクリプト名",
-      "entry_function": "show"
+      "launch_code": "import 任意のスクリプト名\n任意のスクリプト名.show()"
     }
   ]
 }
@@ -132,8 +131,7 @@ User Manifest はローカルに保存された JSON ファイルで、リポジ
           "filename": "my_tool.py"
         }
       ],
-      "entry_module": "my_tool",
-      "entry_function": "show"
+      "launch_code": "import my_tool\nmy_tool.show()"
     }
   ]
 }
@@ -149,8 +147,7 @@ User Manifest はローカルに保存された JSON ファイルで、リポジ
 | `enabled` | | `false` にするとランチャーに表示されない |
 | `scripts[].url` | ✓ | スクリプトの取得元（HTTPS URL または UNC パス） |
 | `scripts[].filename` | ✓ | Maya scripts フォルダに保存されるファイル名 |
-| `entry_module` | ✓ | 起動時に import するモジュール名（`.py` 不要） |
-| `entry_function` | ✓ | 起動時に呼び出す関数名 |
+| `launch_code` | ✓ | 起動時に実行する Python コード（`\n` で複数行記述可） |
 
 > **User Manifest は共通 manifest より優先されません。**  
 > 共通 manifest に同じ `id` のツールが存在する場合、User Manifest 側は無視されます。

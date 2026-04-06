@@ -15,8 +15,7 @@
           "filename": "your_tool.py"
         }
       ],
-      "entry_module": "your_tool",
-      "entry_function": "show"
+      "launch_code": "import your_tool\nyour_tool.show()"
     },
     {
       "id": "lan_tool_example",
@@ -31,8 +30,7 @@
           "filename": "lan_tool.py"
         }
       ],
-      "entry_module": "lan_tool",
-      "entry_function": "show"
+      "launch_code": "import lan_tool\nlan_tool.show()"
     }
   ]
 }

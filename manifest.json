@@ -16,8 +16,7 @@
           "filename": "DoraSkinWeightToolsPy.py"
         }
       ],
-      "entry_module": "DoraSkinWeightToolsPy",
-      "entry_function": "launch"
+      "launch_code": "import DoraSkinWeightToolsPy\nDoraSkinWeightToolsPy.launch()"
     }
   ]
 }

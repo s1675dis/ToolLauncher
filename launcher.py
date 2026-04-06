@@ -65,13 +65,12 @@ class ToolButton(QtWidgets.QToolButton):
         self._refresh()
 
     def _launch(self):
-        entry_module = self.tool.get("entry_module")
-        entry_func   = self.tool.get("entry_function", "show")
+        launch_code = self.tool.get("launch_code")
 
-        if not entry_module:
+        if not launch_code:
             QtWidgets.QMessageBox.warning(
                 self, "Config Error",
-                f"'entry_module' is not set for '{self.tool.get('name')}'."
+                f"'launch_code' is not set for '{self.tool.get('name')}'."
             )
             return
 
@@ -79,17 +78,7 @@ class ToolButton(QtWidgets.QToolButton):
             sys.path.insert(0, self.scripts_dir)
 
         try:
-            if entry_module in sys.modules:
-                del sys.modules[entry_module]
-            __import__(entry_module)
-            mod  = sys.modules[entry_module]
-            func = getattr(mod, entry_func, None)
-            if func is None:
-                raise AttributeError(
-                    f"'{entry_module}' has no function '{entry_func}'.\n"
-                    f"Available: {[x for x in dir(mod) if not x.startswith('_')]}"
-                )
-            func()
+            exec(launch_code)
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Launch Error",
