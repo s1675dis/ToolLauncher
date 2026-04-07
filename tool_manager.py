@@ -7,6 +7,7 @@ import base64
 import json
 import os
 import shutil
+import ssl
 import sys
 import urllib.request
 import urllib.error
@@ -35,6 +36,35 @@ def _ensure_dirs():
 def _is_remote_url(source):
     """Return True if source is an HTTP/HTTPS/FTP URL."""
     return source.startswith(("http://", "https://", "ftp://"))
+
+
+def _ssl_ctx():
+    """SSL コンテキストを返す。証明書検証に失敗する環境（社内プロキシ等）では
+    検証を無効化したコンテキストにフォールバックする。"""
+    ctx = ssl.create_default_context()
+    try:
+        # 標準検証が通るか簡易確認（失敗してもここでは例外を出さない）
+        ctx.check_hostname = True
+        ctx.verify_mode = ssl.CERT_REQUIRED
+    except Exception:
+        pass
+    return ctx
+
+
+def _ssl_ctx_unverified():
+    """証明書検証を無効化した SSL コンテキストを返す。"""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+
+def _urlopen(req, timeout=15):
+    """urlopen のラッパー。SSL 検証失敗時は検証無効でリトライする。"""
+    try:
+        return urllib.request.urlopen(req, timeout=timeout, context=_ssl_ctx())
+    except ssl.SSLError:
+        return urllib.request.urlopen(req, timeout=timeout, context=_ssl_ctx_unverified())
 
 
 def _download(source, dest_path):
@@ -71,7 +101,7 @@ def load_manifest_cache():
 def _fetch_manifest_from_url(url):
     """Fetch a single manifest JSON from the given URL."""
     req = urllib.request.Request(url, headers={"User-Agent": "ToolLauncher/1.0"})
-    with urllib.request.urlopen(req, timeout=15) as resp:
+    with _urlopen(req) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
@@ -217,7 +247,7 @@ def _fetch_remote(url):
         "Pragma":         "no-cache",
     }
     req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=15) as resp:
+    with _urlopen(req) as resp:
         return resp.read()
 
 
@@ -245,7 +275,7 @@ def _fetch_via_contents_api(filename):
     }
     try:
         req = urllib.request.Request(api_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with _urlopen(req) as resp:
             result = json.loads(resp.read().decode("utf-8"))
         return base64.b64decode(result["content"])
     except urllib.error.HTTPError as e:

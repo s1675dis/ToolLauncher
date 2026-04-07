@@ -3,3 +3,4 @@ _scripts/
 *.tmp.*
 __pycache__/
 *.pyc
+LocalTools.json
