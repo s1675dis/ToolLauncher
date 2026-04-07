@@ -9,6 +9,7 @@ import os
 import shutil
 import ssl
 import sys
+import tempfile
 import urllib.request
 import urllib.error
 from typing import Optional, List
@@ -60,11 +61,36 @@ def _ssl_ctx_unverified():
 
 
 def _urlopen(req, timeout=15):
-    """urlopen のラッパー。SSL 検証失敗時は検証無効でリトライする。"""
+    """urlopen のラッパー。SSL 検証失敗時は検証無効でリトライする。
+    urllib は SSLError を URLError にラップするため両方キャッチする。"""
     try:
         return urllib.request.urlopen(req, timeout=timeout, context=_ssl_ctx())
-    except ssl.SSLError:
+    except (ssl.SSLError, urllib.error.URLError) as e:
+        is_ssl = isinstance(e, ssl.SSLError) or isinstance(getattr(e, "reason", None), ssl.SSLError)
+        if not is_ssl:
+            raise
         return urllib.request.urlopen(req, timeout=timeout, context=_ssl_ctx_unverified())
+
+
+def _atomic_write(dest_path, data, mode="wb"):
+    """data を dest_path へアトミックに書き込む。
+    一時ファイルへ書いてから rename することで、
+    書き込み途中のクラッシュによる 0KB ファイル生成を防ぐ。"""
+    if not data:
+        raise ValueError(f"Refusing to write empty content to {dest_path}")
+    dir_ = os.path.dirname(os.path.abspath(dest_path))
+    os.makedirs(dir_, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(dir=dir_)
+    try:
+        with os.fdopen(fd, mode) as f:
+            f.write(data)
+        os.replace(tmp_path, dest_path)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def _download(source, dest_path):
@@ -72,14 +98,28 @@ def _download(source, dest_path):
     Copy source to dest_path.
     - HTTP/HTTPS/FTP : fetched via urllib
     - UNC path (\\server\share\...) or local path : copied via shutil
+    アトミック書き込みにより、途中失敗時の 0KB ファイル生成を防ぐ。
     """
-    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     if _is_remote_url(source):
         data = _fetch_remote(source)
-        with open(dest_path, "wb") as f:
-            f.write(data)
+        _atomic_write(dest_path, data)
     else:
-        shutil.copy2(source, dest_path)
+        # UNC / ローカルパス: 一時ファイル経由でアトミックコピー
+        dir_ = os.path.dirname(os.path.abspath(dest_path))
+        os.makedirs(dir_, exist_ok=True)
+        fd, tmp_path = tempfile.mkstemp(dir=dir_)
+        try:
+            os.close(fd)
+            shutil.copy2(source, tmp_path)
+            if os.path.getsize(tmp_path) == 0:
+                raise ValueError(f"Source file is empty: {source}")
+            os.replace(tmp_path, dest_path)
+        except Exception:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
     return dest_path
 
 
@@ -132,8 +172,7 @@ def fetch_manifest():
 
     merged = {"tools": list(main_tools.values()) + list(user_tools.values())}
 
-    with open(config.MANIFEST_CACHE, "w", encoding="utf-8") as f:
-        json.dump(merged, f, ensure_ascii=False, indent=2)
+    _atomic_write(config.MANIFEST_CACHE, json.dumps(merged, ensure_ascii=False, indent=2).encode("utf-8"))
     return merged
 
 
@@ -203,8 +242,7 @@ def load_user_manifest_paths():
 def save_user_manifest_paths(paths):
     """Save the list of registered local manifest file paths."""
     _ensure_dirs()
-    with open(_user_manifests_file(), "w", encoding="utf-8") as f:
-        json.dump(paths, f, ensure_ascii=False, indent=2)
+    _atomic_write(_user_manifests_file(), json.dumps(paths, ensure_ascii=False, indent=2).encode("utf-8"))
 
 
 # ------------------------------------------------------------------
@@ -300,8 +338,7 @@ def update_launcher_files():
         if _content_equal(dest, remote_data):
             continue
 
-        with open(dest, "wb") as f:
-            f.write(remote_data)
+        _atomic_write(dest, remote_data)
         updated += 1
 
     return updated
