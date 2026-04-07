@@ -4,14 +4,20 @@ ToolLauncher - Main Launcher UI
 import os
 import sys
 
-from PySide2 import QtCore, QtWidgets
+try:
+    from PySide2 import QtCore, QtWidgets
+except ImportError:
+    from PySide6 import QtCore, QtWidgets
 
 import ToolLauncher.config      as config
 import ToolLauncher.tool_manager as tool_manager
 
 try:
     import maya.OpenMayaUI as omui
-    from shiboken2 import wrapInstance
+    try:
+        from shiboken2 import wrapInstance
+    except ImportError:
+        from shiboken6 import wrapInstance
     MAYA_AVAILABLE = True
 except ImportError:
     MAYA_AVAILABLE = False

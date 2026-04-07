@@ -14,7 +14,10 @@ import urllib.request
 import urllib.error
 from typing import Optional, List
 
-from PySide2 import QtCore
+try:
+    from PySide2 import QtCore
+except ImportError:
+    from PySide6 import QtCore
 
 import ToolLauncher.config as config
 
