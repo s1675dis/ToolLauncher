@@ -406,6 +406,8 @@ class UpdateWorker(QtCore.QThread):
 
             self.finished.emit(manifest)
 
+        except urllib.error.HTTPError as e:
+            self.error.emit(f"HTTP {e.code} {e.reason}: {e.url}")
         except urllib.error.URLError as e:
             self.error.emit(f"Network error: {e.reason}")
         except Exception as e:
